@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Todo; // Pastikan ini di-import
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Storage; // 1. Tambahkan ini
+use Illuminate\Support\Facades\Storage;
 
 class TodoController extends Controller
 {
@@ -13,7 +14,7 @@ class TodoController extends Controller
      */
     public function store(Request $request)
     {
-        // 2. Update validasi
+        // Validasi data
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -22,7 +23,7 @@ class TodoController extends Controller
         ]);
 
         $coverPath = null;
-        // 3. Logika untuk upload file
+        // Logika untuk upload file
         if ($request->hasFile('cover')) {
             // Simpan gambar di 'storage/app/public/todos'
             $path = $request->file('cover')->store('public/todos');
@@ -31,7 +32,7 @@ class TodoController extends Controller
             $coverPath = str_replace('public/', '', $path);
         }
 
-        // 4. Buat todo baru dengan data yang lengkap
+        // Buat todo baru dengan data yang lengkap
         $request->user()->todos()->create([
             'title' => $validated['title'],
             'description' => $validated['description'],
@@ -40,6 +41,66 @@ class TodoController extends Controller
         ]);
 
         // Redirect kembali ke halaman home
+        return Redirect::route('home');
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Todo $todo)
+    {
+        // Otorisasi
+        if ($request->user()->id !== $todo->user_id) {
+            abort(403, 'Akses tidak diizinkan');
+        }
+
+        // Validasi baru
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'is_finished' => 'required|boolean',
+            'cover' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'remove_cover' => 'nullable|boolean',
+        ]);
+
+        // Siapkan data untuk di-update (selain cover)
+        $updateData = [
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'is_finished' => $validated['is_finished'],
+        ];
+
+        // Mulai dengan path yang ada
+        $coverPath = $todo->cover; 
+
+        if ($request->hasFile('cover')) {
+            // A. Jika ada file BARU di-upload
+            // Hapus file lama (jika ada)
+            if ($todo->cover) {
+                // --- INI PERBAIKANNYA ---
+                Storage::delete('public/' . $todo->cover); 
+            }
+            
+            // Simpan file baru
+            $path = $request->file('cover')->store('public/todos');
+            $coverPath = str_replace('public/', '', $path);
+
+        } elseif ($request->boolean('remove_cover')) {
+            // B. Jika user mencentang "Hapus gambar"
+            // Hapus file lama (jika ada)
+            if ($todo->cover) {
+                Storage::delete('public/' . $todo->cover);
+            }
+            $coverPath = null; // Set path ke null
+        }
+
+        // Tambahkan path cover ke data update
+        $updateData['cover'] = $coverPath;
+
+        // Update data
+        $todo->update($updateData);
+
+        // Redirect kembali
         return Redirect::route('home');
     }
 }

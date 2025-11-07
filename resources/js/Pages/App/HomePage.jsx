@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import AppLayout from "@/Layouts/AppLayout";
-import { Button } from "@/components/ui/button"; // Button sudah di-import
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useForm, usePage } from "@inertiajs/react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,10 +19,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
 
+// Import komponen modal edit baru
+import EditTodoModal from "@/Components/EditTodoModal";
+
 export default function HomePage() {
     const { auth, todos } = usePage().props;
-    const [open, setOpen] = useState(false);
+    
+    // State untuk modal "Create" (Buat)
+    const [isCreateOpen, setIsCreateOpen] = useState(false); 
+    
+    // State baru untuk modal "Edit"
+    const [editingTodo, setEditingTodo] = useState(null);
 
+    // Form untuk "Create"
     const { data, setData, post, processing, errors, reset } = useForm({
         title: "",
         description: "",
@@ -30,12 +39,12 @@ export default function HomePage() {
         cover: null,
     });
 
-    const handleSubmit = (event) => {
+    const handleCreateSubmit = (event) => {
         event.preventDefault();
         post("/todos", {
             onSuccess: () => {
                 reset();
-                setOpen(false);
+                setIsCreateOpen(false); // Tutup modal create
             },
             preserveScroll: true,
         });
@@ -45,7 +54,7 @@ export default function HomePage() {
         <AppLayout>
             <div className="container mx-auto px-4 py-8">
                 <div className="max-w-4xl mx-auto">
-                    {/* Hero Section & Form (Tidak Berubah) */}
+                    {/* Hero Section & Form */}
                     <div className="text-center mb-12">
                         <h1 className="text-4xl font-bold mb-4">
                             <span
@@ -59,7 +68,8 @@ export default function HomePage() {
                             Apa yang ingin kamu pelajari hari ini?
                         </p>
 
-                        <Dialog open={open} onOpenChange={setOpen}>
+                        {/* Modal "Create" (Buat Baru) */}
+                        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                             <DialogTrigger asChild>
                                 <Button className="bg-blue-600 hover:bg-blue-700 text-white mt-5">
                                     Buat Rencana
@@ -72,14 +82,14 @@ export default function HomePage() {
                                         Isi detail rencanamu di bawah ini.
                                     </DialogDescription>
                                 </DialogHeader>
-                                <form onSubmit={handleSubmit}>
+                                <form onSubmit={handleCreateSubmit}>
                                     <FieldGroup className="grid gap-4 py-4">
                                         <Field>
-                                            <FieldLabel htmlFor="title">
+                                            <FieldLabel htmlFor="title-create">
                                                 Judul
                                             </FieldLabel>
                                             <Input
-                                                id="title"
+                                                id="title-create"
                                                 value={data.title}
                                                 onChange={(e) =>
                                                     setData("title", e.target.value)
@@ -93,11 +103,11 @@ export default function HomePage() {
                                             )}
                                         </Field>
                                         <Field>
-                                            <FieldLabel htmlFor="description">
+                                            <FieldLabel htmlFor="description-create">
                                                 Deskripsi (Opsional)
                                             </FieldLabel>
                                             <Textarea
-                                                id="description"
+                                                id="description-create"
                                                 value={data.description}
                                                 onChange={(e) =>
                                                     setData("description", e.target.value)
@@ -111,11 +121,11 @@ export default function HomePage() {
                                             )}
                                         </Field>
                                         <Field>
-                                            <FieldLabel htmlFor="cover">
+                                            <FieldLabel htmlFor="cover-create">
                                                 Gambar (Opsional)
                                             </FieldLabel>
                                             <Input
-                                                id="cover"
+                                                id="cover-create"
                                                 type="file"
                                                 onChange={(e) =>
                                                     setData("cover", e.target.files[0])
@@ -129,14 +139,14 @@ export default function HomePage() {
                                         </Field>
                                         <div className="flex items-center space-x-2">
                                             <Checkbox
-                                                id="is_finished"
+                                                id="is_finished-create"
                                                 checked={data.is_finished}
                                                 onCheckedChange={(checked) =>
                                                     setData("is_finished", checked)
                                                 }
                                             />
                                             <Label
-                                                htmlFor="is_finished"
+                                                htmlFor="is_finished-create"
                                                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                             >
                                                 Tandai sebagai selesai
@@ -163,7 +173,6 @@ export default function HomePage() {
                         </Dialog>
                     </div>
 
-                    {/* --- PERUBAHAN DI SINI --- */}
                     {/* Tampilkan Daftar Todos */}
                     <div className="mt-12">
                         <h2 className="text-2xl font-semibold mb-4">
@@ -179,11 +188,9 @@ export default function HomePage() {
                             </Card>
                         )}
 
-                        {/* Update Tampilan Card */}
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                             {todos.map((todo) => (
                                 <Card key={todo.id} className="shadow-sm flex flex-col overflow-hidden">
-                                    {/* Tampilkan gambar jika ada */}
                                     {todo.cover_url && (
                                         <img
                                             src={todo.cover_url}
@@ -191,12 +198,8 @@ export default function HomePage() {
                                             className="w-full h-40 object-cover"
                                         />
                                     )}
-                                    
-                                    {/* Konten Card (flex-col) */}
                                     <CardContent className="pt-6 flex-1 flex flex-col justify-between">
-                                        {/* Bagian Atas: Info */}
                                         <div>
-                                            {/* Status */}
                                             <div className="mb-2">
                                                 {todo.is_finished ? (
                                                     <span className="text-xs font-medium bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
@@ -208,21 +211,15 @@ export default function HomePage() {
                                                     </span>
                                                 )}
                                             </div>
-                                            
-                                            {/* Judul */}
                                             <p className="font-medium text-lg">
                                                 {todo.title}
                                             </p>
-                                            
-                                            {/* Deskripsi (jika ada) */}
                                             {todo.description && (
                                                 <p className="text-muted-foreground text-sm mt-2 line-clamp-3">
                                                     {todo.description}
                                                 </p>
                                             )}
                                         </div>
-
-                                        {/* Bagian Bawah: Tombol Aksi */}
                                         <div className="mt-6 flex justify-end gap-2">
                                             <Button 
                                                 size="sm" 
@@ -230,7 +227,11 @@ export default function HomePage() {
                                             >
                                                 Detail
                                             </Button>
-                                            <Button variant="outline" size="sm">
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm"
+                                                onClick={() => setEditingTodo(todo)}
+                                            >
                                                 Edit
                                             </Button>
                                             <Button variant="destructive" size="sm">
@@ -242,10 +243,14 @@ export default function HomePage() {
                             ))}
                         </div>
                     </div>
-                    {/* --- BATAS PERUBAHAN --- */}
-                    
                 </div>
             </div>
+
+            {/* Render Modal Edit di sini */}
+            <EditTodoModal 
+                todo={editingTodo} 
+                onClose={() => setEditingTodo(null)} 
+            />
         </AppLayout>
     );
 }
