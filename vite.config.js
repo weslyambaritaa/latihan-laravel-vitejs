@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import laravel from "laravel-vite-plugin";
 import react from "@vitejs/plugin-react";
+import path from "path"; // 1. PASTIKAN 'path' DI-IMPORT
 
 export default defineConfig({
     plugins: [
@@ -16,11 +17,13 @@ export default defineConfig({
             host: "localhost",
         },
     },
+    // 2. BLOK 'resolve' INI TELAH DIPERBAIKI
     resolve: {
         alias: {
-            "@": "/resources/js",
-            "@/components": "/resources/js/Components",
-            "@/lib": "/resources/js/lib",
+            // Gunakan path.resolve agar Node.js mengerti path-nya
+            "@": path.resolve(__dirname, "resources/js"),
+            "@/components": path.resolve(__dirname, "resources/js/Components"),
+            "@/lib": path.resolve(__dirname, "resources/js/lib"),
         },
     },
     optimizeDeps: {
