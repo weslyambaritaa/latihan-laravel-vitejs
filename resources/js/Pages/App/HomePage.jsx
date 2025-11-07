@@ -1,8 +1,9 @@
+// 1. Import 'router' dari Inertia
 import React, { useState } from "react";
 import AppLayout from "@/Layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useForm, usePage } from "@inertiajs/react";
+import { useForm, usePage, router } from "@inertiajs/react"; // Tambahkan router
 import { Card, CardContent } from "@/components/ui/card";
 import {
     Dialog,
@@ -18,18 +19,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
-
-// Import komponen modal edit baru
 import EditTodoModal from "@/Components/EditTodoModal";
 
 export default function HomePage() {
     const { auth, todos } = usePage().props;
     
-    // State untuk modal "Create" (Buat)
+    // State untuk modal "Create"
     const [isCreateOpen, setIsCreateOpen] = useState(false); 
-    
-    // State baru untuk modal "Edit"
+    // State untuk modal "Edit"
     const [editingTodo, setEditingTodo] = useState(null);
+
+    // 2. State baru untuk modal "Delete"
+    // 'null' berarti tidak ada yg dihapus
+    const [deletingTodo, setDeletingTodo] = useState(null);
+    // State untuk loading saat menghapus
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Form untuk "Create"
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -44,9 +48,27 @@ export default function HomePage() {
         post("/todos", {
             onSuccess: () => {
                 reset();
-                setIsCreateOpen(false); // Tutup modal create
+                setIsCreateOpen(false);
             },
             preserveScroll: true,
+        });
+    };
+
+    // 3. Fungsi untuk menangani 'DELETE'
+    const handleDelete = () => {
+        if (!deletingTodo) return;
+        
+        setIsDeleting(true); // Mulai loading
+        
+        router.delete(`/todos/${deletingTodo.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeletingTodo(null); // Tutup modal
+                setIsDeleting(false); // Selesai loading
+            },
+            onError: () => {
+                setIsDeleting(false); // Selesai loading (jika gagal)
+            },
         });
     };
 
@@ -54,8 +76,9 @@ export default function HomePage() {
         <AppLayout>
             <div className="container mx-auto px-4 py-8">
                 <div className="max-w-4xl mx-auto">
-                    {/* Hero Section & Form */}
+                    {/* Hero Section & Form Create (Tidak Berubah) */}
                     <div className="text-center mb-12">
+                        {/* ... (Hero section tidak berubah) ... */}
                         <h1 className="text-4xl font-bold mb-4">
                             <span
                                 dangerouslySetInnerHTML={{
@@ -67,9 +90,8 @@ export default function HomePage() {
                         <p className="text-xl text-muted-foreground">
                             Apa yang ingin kamu pelajari hari ini?
                         </p>
-
-                        {/* Modal "Create" (Buat Baru) */}
                         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                            {/* ... (Tombol 'Buat Rencana' dan Modal Create tidak berubah) ... */}
                             <DialogTrigger asChild>
                                 <Button className="bg-blue-600 hover:bg-blue-700 text-white mt-5">
                                     Buat Rencana
@@ -178,6 +200,7 @@ export default function HomePage() {
                         <h2 className="text-2xl font-semibold mb-4">
                             Daftar Rencanamu
                         </h2>
+                        {/* ... (Pesan "kosong" tidak berubah) ... */}
                         {todos.length === 0 && (
                             <Card>
                                 <CardContent className="pt-6">
@@ -188,9 +211,11 @@ export default function HomePage() {
                             </Card>
                         )}
 
+                        {/* Tampilan Card */}
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                             {todos.map((todo) => (
                                 <Card key={todo.id} className="shadow-sm flex flex-col overflow-hidden">
+                                    {/* ... (Tampilan gambar, status, judul, deskripsi tidak berubah) ... */}
                                     {todo.cover_url && (
                                         <img
                                             src={todo.cover_url}
@@ -220,6 +245,8 @@ export default function HomePage() {
                                                 </p>
                                             )}
                                         </div>
+
+                                        {/* Bagian Bawah: Tombol Aksi */}
                                         <div className="mt-6 flex justify-end gap-2">
                                             <Button 
                                                 size="sm" 
@@ -234,7 +261,13 @@ export default function HomePage() {
                                             >
                                                 Edit
                                             </Button>
-                                            <Button variant="destructive" size="sm">
+                                            
+                                            {/* 4. Hubungkan tombol "Hapus" */}
+                                            <Button 
+                                                variant="destructive" 
+                                                size="sm"
+                                                onClick={() => setDeletingTodo(todo)}
+                                            >
                                                 Hapus
                                             </Button>
                                         </div>
@@ -246,11 +279,44 @@ export default function HomePage() {
                 </div>
             </div>
 
-            {/* Render Modal Edit di sini */}
+            {/* Modal "Edit" (Tidak Berubah) */}
             <EditTodoModal 
                 todo={editingTodo} 
                 onClose={() => setEditingTodo(null)} 
             />
+
+            {/* 5. Render Modal Konfirmasi "Delete" */}
+            <Dialog open={!!deletingTodo} onOpenChange={() => setDeletingTodo(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Apakah Anda Yakin?</DialogTitle>
+                        <DialogDescription>
+                            Aksi ini tidak dapat dibatalkan. Ini akan menghapus rencana 
+                            <span className="font-semibold text-foreground">
+                                " {deletingTodo?.title} "
+                            </span>
+                            secara permanen.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setDeletingTodo(null)}
+                            disabled={isDeleting}
+                        >
+                            Batal
+                        </Button>
+                        <Button 
+                            variant="destructive" 
+                            onClick={handleDelete} 
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? "Menghapus..." : "Hapus"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
         </AppLayout>
     );
 }
