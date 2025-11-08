@@ -42,7 +42,7 @@ class HomeController extends Controller
         // **********************************************
         // ********* PERUBAHAN UNTUK PAGINATION *********
         // **********************************************
-        $todos = $todosQuery->paginate(10)->withQueryString(); // Terapkan pagination 10 item per halaman
+        $todos = $todosQuery->paginate(20)->withQueryString(); // Terapkan pagination 20 item per halaman
 
         // **********************************************
         // ********* PENAMBAHAN STATISTIK TODO **********
