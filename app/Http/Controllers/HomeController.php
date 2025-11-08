@@ -44,6 +44,19 @@ class HomeController extends Controller
         // **********************************************
         $todos = $todosQuery->paginate(10)->withQueryString(); // Terapkan pagination 10 item per halaman
 
+        // **********************************************
+        // ********* PENAMBAHAN STATISTIK TODO **********
+        // **********************************************
+        $totalTodos = $auth->todos()->count();
+        $finishedCount = $auth->todos()->where('is_finished', true)->count();
+        $unfinishedCount = $totalTodos - $finishedCount;
+
+        $todoStats = [
+            'total' => $totalTodos,
+            'finished' => $finishedCount,
+            'unfinished' => $unfinishedCount,
+        ];
+
         $data = [
             'auth' => $auth,
             'todos' => $todos, // Sekarang ini adalah objek Paginator
@@ -51,7 +64,9 @@ class HomeController extends Controller
             'filters' => [
                 'search' => $search,
                 'filter' => $filter,
-            ]
+            ],
+            // Kirim statistik todo
+            'todo_stats' => $todoStats, 
         ];
 
         return Inertia::render('App/HomePage', $data);

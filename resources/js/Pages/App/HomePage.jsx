@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react"; 
 import AppLayout from "@/Layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,13 @@ import { Label } from "@/components/ui/label";
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
 import EditTodoModal from "@/Components/EditTodoModal";
 
-// --- START: KOMPONEN PAGINATION YANG DIPERBAIKI ---
+// --- START: IMPORT RECHARTS DAN ICON BARU ---
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { Download } from 'lucide-react'; 
+// --- END: IMPORT RECHARTS DAN ICON BARU ---
+
+
+// --- KOMPONEN PAGINATION (TIDAK BERUBAH) ---
 function Pagination({ links, currentPage, lastPage }) {
     if (lastPage <= 1) {
         return null;
@@ -75,12 +81,217 @@ function Pagination({ links, currentPage, lastPage }) {
         </div>
     );
 }
-// --- END: KOMPONEN PAGINATION YANG DIPERBAIKI ---
+
+
+// --- START: KOMPONEN PIE CHART DENGAN FUNGSI DOWNLOAD SVG TERINTEGRASI (FIXED) ---
+function TodoStatsChart({ finished, unfinished }) {
+    // Ref hanya untuk elemen SVG murni (Chart)
+    const chartRef = useRef(null); 
+    
+    // Data untuk Pie Chart
+    const chartData = [
+        { name: 'Selesai', value: finished, color: '#10b981' }, // Tailwind: emerald-500
+        { name: 'Belum Selesai', value: unfinished, color: '#f59e0b' }, // Tailwind: amber-500
+    ];
+    
+    const total = finished + unfinished;
+
+    if (total === 0) {
+        return (
+            <Card className="p-4 flex flex-col items-center justify-center h-full min-h-48">
+                <p className="text-lg font-semibold text-muted-foreground">
+                    Tidak ada data Rencana.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                    Buat rencana pertamamu untuk melihat statistik.
+                </p>
+            </Card>
+        );
+    }
+    
+    // Custom label render function
+    const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+        const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+        const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
+        const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
+
+        if (percent * 100 > 5) {
+            return (
+                <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight="bold">
+                    {`${(percent * 100).toFixed(0)}%`}
+                </text>
+            );
+        }
+        return null;
+    };
+
+
+    // FUNGSI BARU: Handle Download SVG terintegrasi (Chart + Data/Judul)
+    const handleDownload = () => {
+        if (!chartRef.current) {
+            alert("Chart belum dirender dengan sempurna. Coba lagi.");
+            return;
+        }
+
+        // 1. Dapatkan SVG Pie Chart murni dari ResponsiveContainer
+        const innerSvgElement = chartRef.current.querySelector('svg');
+        if (!innerSvgElement) {
+            alert("Elemen SVG chart tidak ditemukan.");
+            return;
+        }
+
+        // **PERBAIKAN KRITIS: Mengambil elemen <g> yang berisi elemen drawing chart**
+        // Mencari elemen <g> di dalam SVG yang bukan tooltip wrapper, yang berisi semua path
+        const chartDrawingGroup = innerSvgElement.querySelector('g:not(.recharts-tooltip-wrapper)'); 
+        
+        if (!chartDrawingGroup) {
+            // Coba ambil elemen <g> pertama (ini adalah fallback)
+            const fallbackGroup = innerSvgElement.querySelector('g');
+            if (fallbackGroup) {
+                // Gunakan fallback
+                chartDrawingGroup = fallbackGroup;
+            } else {
+                alert("Konten chart tidak ditemukan. Coba lagi.");
+                return;
+            }
+        }
+        
+        // Dapatkan markup dari grup chart
+        const chartMarkup = new XMLSerializer().serializeToString(chartDrawingGroup);
+        
+        // 2. Tentukan ukuran kanvas baru dan posisi elemen
+        const svgWidth = 600;
+        const svgHeight = 500;
+        // Penyesuaian: Menggeser Pie Chart ke kiri (100) dan sedikit ke bawah (130) agar ada ruang untuk teks
+        const chartTranslationX = 100; 
+        const chartTranslationY = 130; 
+
+        // 3. Buat markup SVG untuk Judul dan Legenda
+        let legendMarkup = '';
+        let yPos = 100; // Mulai posisi Y untuk Legenda
+        
+        chartData.forEach((entry) => {
+            const percentage = total > 0 ? ((entry.value / total) * 100).toFixed(0) : 0;
+            
+            legendMarkup += `
+                <g transform="translate(300, ${yPos})" font-family="sans-serif">
+                    <rect x="0" y="-10" width="16" height="16" fill="${entry.color}" rx="3" />
+                    <text x="25" y="5" font-size="14" fill="#333">
+                        ${entry.name}: ${entry.value} (${percentage}%)
+                    </text>
+                </g>
+            `;
+            yPos += 30;
+        });
+
+        const titleMarkup = `
+            <text x="${svgWidth / 2}" y="30" text-anchor="middle" font-size="20" font-weight="bold" fill="#333" font-family="sans-serif">
+                Statistik Rencana
+            </text>
+            <text x="${svgWidth / 2}" y="60" text-anchor="middle" font-size="14" fill="#666" font-family="sans-serif">
+                Total Rencana: ${total}
+            </text>
+        `;
+        
+        // 4. Gabungkan semua markup ke dalam SVG root
+        const combinedSvgMarkup = `
+            <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title-chart">
+                <style>
+                    text { font-family: sans-serif; }
+                </style>
+                <title id="title-chart">Statistik Rencana: Selesai ${finished}, Belum Selesai ${unfinished}</title>
+
+                ${titleMarkup}
+                
+                <g transform="translate(${chartTranslationX}, ${chartTranslationY})">
+                    ${chartMarkup}
+                </g>
+
+                ${legendMarkup}
+            </svg>
+        `;
+        
+        // 5. Download file
+        const svgBlob = new Blob([combinedSvgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+        
+        const downloadLink = document.createElement('a');
+        downloadLink.href = svgUrl;
+        downloadLink.download = 'todo_statistik_lengkap.svg';
+        
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(svgUrl); 
+    };
+    
+    return (
+        <Card>
+            <CardContent className="pt-6">
+                {/* Header dengan Tombol Download tunggal */}
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-2xl font-semibold">
+                        Statistik Rencana
+                    </h3>
+                    <Button onClick={handleDownload} variant="outline" size="sm">
+                        <Download className="w-4 h-4 mr-2" />
+                        Download Lengkap (.svg)
+                    </Button>
+                </div>
+                
+                <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                    {/* Container untuk Pie Chart - Attach ref di sini! */}
+                    <div className="w-full h-56 md:w-1/2" ref={chartRef}> 
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={chartData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={80}
+                                    fill="#8884d8"
+                                    labelLine={false}
+                                    label={renderCustomizedLabel}
+                                >
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                                <Tooltip formatter={(value) => `${value} (${((value / total) * 100).toFixed(0)}%)`}/>
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                    
+                    {/* Legenda/Keterangan */}
+                    <div className="space-y-3 md:w-1/2 w-full">
+                        {chartData.map((entry, index) => (
+                            <div key={index} className="flex items-center justify-between p-2 rounded-md hover:bg-muted transition-colors">
+                                <div className="flex items-center">
+                                    <div 
+                                        className="w-4 h-4 rounded-full mr-3 flex-shrink-0" 
+                                        style={{ backgroundColor: entry.color }}
+                                    ></div>
+                                    <span className="text-base font-medium text-foreground">{entry.name}</span>
+                                </div>
+                                <span className="text-base font-bold">
+                                    {entry.value} ({((entry.value / total) * 100).toFixed(0)}%)
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+// --- END: KOMPONEN PIE CHART DENGAN FUNGSI DOWNLOAD SVG TERINTEGRASI (FIXED) ---
 
 
 export default function HomePage() {
-    // Destructure `filters` dari props
-    const { auth, todos, filters } = usePage().props; 
+    // Destructure `filters` dan `todo_stats` dari props
+    const { auth, todos, filters, todo_stats } = usePage().props; 
     
     // State untuk modal "Create" (Buat)
     const [isCreateOpen, setIsCreateOpen] = useState(false); 
@@ -280,6 +491,17 @@ export default function HomePage() {
                             </DialogContent>
                         </Dialog>
                     </div>
+
+                    {/* --- PENAMBAHAN CHART BARU --- */}
+                    {todo_stats && (
+                        <div className="mb-12">
+                            <TodoStatsChart 
+                                finished={todo_stats.finished} 
+                                unfinished={todo_stats.unfinished} 
+                            />
+                        </div>
+                    )}
+                    {/* --- AKHIR PENAMBAHAN CHART BARU --- */}
 
                     {/* Tampilkan Daftar Todos */}
                     <div className="mt-12">
