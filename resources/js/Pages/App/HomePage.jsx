@@ -23,7 +23,8 @@ import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
 import EditTodoModal from "@/Components/EditTodoModal";
 
 export default function HomePage() {
-    const { auth, todos } = usePage().props;
+    // Destructure `filters` dari props
+    const { auth, todos, filters } = usePage().props; //
     
     // State untuk modal "Create" (Buat)
     const [isCreateOpen, setIsCreateOpen] = useState(false); 
@@ -35,7 +36,39 @@ export default function HomePage() {
     const [deletingTodo, setDeletingTodo] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Form untuk "Create"
+    // State untuk Search dan Filter BARU
+    const [search, setSearch] = useState(filters.search || ""); // Ambil nilai awal dari props
+    const [filter, setFilter] = useState(filters.filter || "all"); // Ambil nilai awal dari props
+
+    // Handler untuk Search dan Filter BARU
+    const handleFilterChange = (event) => {
+        const newFilter = event.target.value;
+        setFilter(newFilter);
+        // Lakukan request Inertia dengan parameter baru
+        const url = (typeof route === 'function') ? route("home") : '/';
+        router.get(
+            url, 
+            { search: search, filter: newFilter }, 
+            // Pertahankan scroll dan ganti history state
+            { preserveState: true, replace: true } 
+        );
+    };
+
+    const handleSearchChange = (event) => {
+        const newSearch = event.target.value;
+        setSearch(newSearch);
+        
+        const url = (typeof route === 'function') ? route("home") : '/';
+        // Lakukan request Inertia dengan parameter baru. 
+        // Idealnya ini menggunakan debounce, tapi untuk implementasi cepat kita panggil langsung.
+        router.get(
+            url, 
+            { search: newSearch, filter: filter }, 
+            { preserveState: true, replace: true }
+        );
+    };
+    
+    // Form untuk "Create" (Tidak Berubah)
     const { data, setData, post, processing, errors, reset } = useForm({
         title: "",
         description: "",
@@ -54,7 +87,7 @@ export default function HomePage() {
         });
     };
 
-    // Fungsi untuk menangani 'DELETE'
+    // Fungsi untuk menangani 'DELETE' (Tidak Berubah)
     const handleDelete = () => {
         if (!deletingTodo) return;
         
@@ -198,11 +231,37 @@ export default function HomePage() {
                         <h2 className="text-2xl font-semibold mb-4">
                             Daftar Rencanamu
                         </h2>
+                        
+                        {/* INPUT SEARCH & FILTER BARU */}
+                        <div className="flex flex-col md:flex-row gap-4 mb-6">
+                            <Input
+                                type="text"
+                                placeholder="Cari berdasarkan judul atau deskripsi..."
+                                value={search}
+                                onChange={handleSearchChange}
+                                className="w-full md:w-3/4"
+                            />
+                            {/* Menggunakan elemen <select> native dengan styling dasar Tailwind (meniru komponen Input) */}
+                            <select
+                                value={filter}
+                                onChange={handleFilterChange}
+                                className="w-full md:w-1/4 h-10 border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 rounded-md"
+                            >
+                                <option value="all">Semua Status</option>
+                                <option value="unfinished">Belum Selesai</option>
+                                <option value="finished">Selesai</option>
+                            </select>
+                        </div>
+                        {/* AKHIR INPUT SEARCH & FILTER BARU */}
+
                         {todos.length === 0 && (
                             <Card>
                                 <CardContent className="pt-6">
                                     <p className="text-muted-foreground text-center">
-                                        Kamu belum punya rencana. Ayo buat satu!
+                                        {/* Tampilkan pesan yang relevan jika tidak ada hasil setelah pencarian/filter */}
+                                        {filters.search || filters.filter !== 'all'
+                                            ? "Tidak ada rencana yang cocok dengan kriteria pencarian/filter Anda."
+                                            : "Kamu belum punya rencana. Ayo buat satu!"}
                                     </p>
                                 </CardContent>
                             </Card>
