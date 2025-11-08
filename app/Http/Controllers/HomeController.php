@@ -17,9 +17,12 @@ class HomeController extends Controller
         // Ambil parameter dari request
         $search = $request->input('search');
         $filter = $request->input('filter', 'all'); // Default 'all'
+        
+        // Ambil nomor halaman saat ini (untuk pagination)
+        $page = $request->input('page'); 
 
         // 1. Ambil todos milik user, urutkan dari yang terbaru
-        $todosQuery = $auth->todos()->latest(); //
+        $todosQuery = $auth->todos()->latest();
 
         // Logika Search: Cari di kolom title atau description
         if ($search) {
@@ -35,13 +38,15 @@ class HomeController extends Controller
         } elseif ($filter === 'unfinished') {
             $todosQuery->where('is_finished', false);
         }
-        // Jika 'all', tidak perlu menambah kondisi filter
-
-        $todos = $todosQuery->get();
+        
+        // **********************************************
+        // ********* PERUBAHAN UNTUK PAGINATION *********
+        // **********************************************
+        $todos = $todosQuery->paginate(10)->withQueryString(); // Terapkan pagination 10 item per halaman
 
         $data = [
             'auth' => $auth,
-            'todos' => $todos, // 2. Kirim data todos yang sudah difilter/dicari ke frontend
+            'todos' => $todos, // Sekarang ini adalah objek Paginator
             // Kirim kembali state search dan filter ke frontend
             'filters' => [
                 'search' => $search,
