@@ -41,8 +41,8 @@ class Todo extends Model
     public function getCoverUrlAttribute(): ?string
     {
         if ($this->cover) {
-            // Fungsi Storage::url() akan otomatis menggunakan APP_URL dari .env
-            return Storage::url($this->cover);
+            // PASTIKAN ada ->disk('public')
+            return Storage::disk('public')->url($this->cover);
         }
         return null;
     }

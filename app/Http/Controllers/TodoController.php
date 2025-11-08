@@ -25,8 +25,8 @@ class TodoController extends Controller
 
         $coverPath = null;
         if ($request->hasFile('cover')) {
-            $path = $request->file('cover')->store('public/todos');
-            $coverPath = str_replace('public/', '', $path);
+            // PASTIKAN ini ('todos', 'public') dan TIDAK ADA str_replace
+            $coverPath = $request->file('cover')->store('todos', 'public');
         }
 
         $request->user()->todos()->create([
@@ -98,21 +98,20 @@ class TodoController extends Controller
             'remove_cover' => 'nullable|boolean',
         ]);
 
-        $coverPath = $todo->cover;
+        $coverPath = $todo->cover; // Biarkan ini
 
         if ($request->hasFile('cover')) {
-            // Hapus file lama jika ada
             if ($todo->cover) {
-                Storage::delete('public/' . $todo->cover);
+                // PASTIKAN ada disk('public')
+                Storage::disk('public')->delete($todo->cover);
             }
-            // Simpan file baru
-            $path = $request->file('cover')->store('public/todos');
-            $coverPath = str_replace('public/', '', $path);
+            // PASTIKAN ini ('todos', 'public') dan TIDAK ADA str_replace
+            $coverPath = $request->file('cover')->store('todos', 'public');
 
         } elseif ($request->boolean('remove_cover')) {
-            // Hapus file lama jika dicentang
             if ($todo->cover) {
-                Storage::delete('public/' . $todo->cover);
+                // PASTIKAN ada disk('public')
+                Storage::disk('public')->delete($todo->cover);
             }
             $coverPath = null;
         }
