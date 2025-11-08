@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage; // 1. Tambahkan ini
+use Illuminate\Support\Facades\Storage; // 1. Pastikan ini ada
 
 class Todo extends Model
 {
@@ -32,7 +32,7 @@ class Todo extends Model
         return $this->belongsTo(User::class);
     }
 
-    // 2. Tambahkan accessor ini untuk URL gambar
+    // 2. PASTIKAN FUNGSI INI ADA
     /**
      * Get the URL for the todo's cover image.
      *
@@ -41,7 +41,7 @@ class Todo extends Model
     public function getCoverUrlAttribute(): ?string
     {
         if ($this->cover) {
-            // Ini akan menghasilkan URL publik seperti 'http://localhost/storage/todos/namafile.jpg'
+            // Fungsi Storage::url() akan otomatis menggunakan APP_URL dari .env
             return Storage::url($this->cover);
         }
         return null;

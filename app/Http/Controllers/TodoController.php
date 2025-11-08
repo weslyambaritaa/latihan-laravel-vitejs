@@ -1,15 +1,19 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers; // <-- KESALAHAN SUDAH DIPERBAIKI DI SINI
 
 use App\Models\Todo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia; // Pastikan ini di-import
 
 class TodoController extends Controller
 {
-    // ... (method store tidak berubah) ...
+    /**
+     * Store a newly created resource in storage.
+     * (Method 'store' tidak berubah)
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -35,70 +39,112 @@ class TodoController extends Controller
         return Redirect::route('home');
     }
 
-    // ... (method update tidak berubah) ...
-    public function update(Request $request, Todo $todo)
+    /**
+     * METHOD BARU
+     * Display the specified resource.
+     */
+    public function show(Request $request, Todo $todo)
     {
+        // Otorisasi
         if ($request->user()->id !== $todo->user_id) {
             abort(403, 'Akses tidak diizinkan');
         }
 
+        // Render halaman React baru dan kirim data 'todo'
+        return Inertia::render('App/Todos/Show', [
+            'todo' => $todo
+        ]);
+    }
+
+    /**
+     * METHOD UPDATE (DISEDERHANAKAN)
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Todo $todo)
+    {
+        // Otorisasi
+        if ($request->user()->id !== $todo->user_id) {
+            abort(403, 'Akses tidak diizinkan');
+        }
+
+        // Validasi HANYA untuk data teks
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'is_finished' => 'required|boolean',
+        ]);
+        
+        // Update data
+        $todo->update($validated);
+
+        // Redirect kembali ke halaman sebelumnya (bisa home atau detail)
+        return Redirect::back();
+    }
+
+    /**
+     * METHOD BARU
+     * Update the cover image for the specified resource.
+     */
+    public function updateCover(Request $request, Todo $todo)
+    {
+        // Otorisasi
+        if ($request->user()->id !== $todo->user_id) {
+            abort(403, 'Akses tidak diizinkan');
+        }
+
+        // Validasi hanya untuk gambar
+        $validated = $request->validate([
             'cover' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'remove_cover' => 'nullable|boolean',
         ]);
 
-        $updateData = [
-            'title' => $validated['title'],
-            'description' => $validated['description'],
-            'is_finished' => $validated['is_finished'],
-        ];
-
-        $coverPath = $todo->cover; 
+        $coverPath = $todo->cover;
 
         if ($request->hasFile('cover')) {
+            // Hapus file lama jika ada
             if ($todo->cover) {
-                Storage::delete('public/' . $todo->cover); 
+                Storage::delete('public/' . $todo->cover);
             }
-            
+            // Simpan file baru
             $path = $request->file('cover')->store('public/todos');
             $coverPath = str_replace('public/', '', $path);
 
         } elseif ($request->boolean('remove_cover')) {
+            // Hapus file lama jika dicentang
             if ($todo->cover) {
                 Storage::delete('public/' . $todo->cover);
             }
             $coverPath = null;
         }
 
-        $updateData['cover'] = $coverPath;
-        $todo->update($updateData);
+        // Update database
+        $todo->update(['cover' => $coverPath]);
 
-        return Redirect::route('home');
+        // Redirect kembali ke halaman detail
+        return Redirect::route('todos.show', $todo->id);
     }
 
-    // 2. TAMBAHKAN METHOD BARU INI
+
     /**
      * Remove the specified resource from storage.
+     * (Method 'destroy' tidak berubah)
      */
     public function destroy(Request $request, Todo $todo)
     {
-        // 3. Otorisasi: Pastikan user yang login adalah pemilik todo
+        // Otorisasi
         if ($request->user()->id !== $todo->user_id) {
             abort(403, 'Akses tidak diizinkan');
         }
 
-        // 4. Hapus gambar dari storage (jika ada)
+        // Hapus gambar dari storage (jika ada)
         if ($todo->cover) {
             Storage::delete('public/' . $todo->cover);
         }
 
-        // 5. Hapus data dari database
+        // Hapus data dari database
         $todo->delete();
 
-        // 6. Redirect kembali
+        // Redirect kembali ke home
         return Redirect::route('home');
     }
 }

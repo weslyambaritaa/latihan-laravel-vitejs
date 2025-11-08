@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
+// Hapus 'useRef'
+import React, { useEffect, useState } from "react";
 import { useForm } from "@inertiajs/react";
 import {
     Dialog,
@@ -10,50 +11,35 @@ import {
     DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/input"; // <-- PERBAIKAN DI SINI
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
 
-// Komponen ini menerima 2 props:
-// 1. todo: Objek todo yang akan diedit (jika null, modal tidak tampil)
-// 2. onClose: Fungsi untuk dipanggil saat modal ditutup
 export default function EditTodoModal({ todo, onClose }) {
-    // Tentukan apakah modal terbuka berdasarkan prop 'todo'
     const isOpen = !!todo;
-    const fileInputRef = useRef(null);
 
-    // Siapkan form
+    // 1. Hapus 'cover' dan 'remove_cover' dari form
     const { data, setData, post, processing, errors, reset } = useForm({
         title: "",
         description: "",
         is_finished: false,
-        cover: null,
-        remove_cover: false,
     });
 
-    // useEffect ini akan mengisi form dengan data
-    // setiap kali prop 'todo' berubah
     useEffect(() => {
         if (todo) {
             setData({
                 title: todo.title,
                 description: todo.description || "",
                 is_finished: todo.is_finished,
-                cover: null, // Selalu reset file input
-                remove_cover: false, // Selalu reset checkbox
             });
-            // Reset input file secara manual
-            if (fileInputRef.current) {
-                fileInputRef.current.value = null;
-            }
+            // 2. Hapus logic untuk reset file input
         }
-    }, [todo]);
+    }, [todo]); // Dependensi: jalankan ulang jika 'todo' berubah
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        // Kirim ke rute update, dengan 'id' dari todo
         post(`/todos/${todo.id}`, {
             onSuccess: () => onClose(), // Tutup modal jika berhasil
             preserveScroll: true,
@@ -66,23 +52,7 @@ export default function EditTodoModal({ todo, onClose }) {
         }
     };
 
-    // Handler untuk input file
-    const handleFileChange = (e) => {
-        setData("cover", e.target.files[0]);
-        setData("remove_cover", false); // Matikan "remove" jika file baru dipilih
-    };
-
-    // Handler untuk checkbox "Hapus"
-    const handleRemoveChange = (checked) => {
-        setData("remove_cover", checked);
-        if (checked) {
-            setData("cover", null); // Hapus data file jika "remove" dicentang
-            // Reset input file
-            if (fileInputRef.current) {
-                fileInputRef.current.value = null;
-            }
-        }
-    };
+    // 3. Hapus handler 'handleFileChange' dan 'handleRemoveChange'
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -95,10 +65,11 @@ export default function EditTodoModal({ todo, onClose }) {
                 </DialogHeader>
                 <form onSubmit={handleSubmit}>
                     <FieldGroup className="grid gap-4 py-4">
+                        {/* ... (Field 'Judul' tidak berubah) ... */}
                         <Field>
-                            <FieldLabel htmlFor="title">Judul</FieldLabel>
+                            <FieldLabel htmlFor="title-edit">Judul</FieldLabel>
                             <Input
-                                id="title"
+                                id="title-edit"
                                 value={data.title}
                                 onChange={(e) =>
                                     setData("title", e.target.value)
@@ -111,12 +82,14 @@ export default function EditTodoModal({ todo, onClose }) {
                                 </p>
                             )}
                         </Field>
+                        
+                        {/* ... (Field 'Deskripsi' tidak berubah) ... */}
                         <Field>
-                            <FieldLabel htmlFor="description">
+                            <FieldLabel htmlFor="description-edit">
                                 Deskripsi (Opsional)
                             </FieldLabel>
                             <Textarea
-                                id="description"
+                                id="description-edit"
                                 value={data.description}
                                 onChange={(e) =>
                                     setData("description", e.target.value)
@@ -130,58 +103,12 @@ export default function EditTodoModal({ todo, onClose }) {
                             )}
                         </Field>
 
-                        {/* Tampilkan gambar saat ini (jika ada) */}
-                        {todo?.cover_url && (
-                            <div className="mb-2">
-                                <Label>Gambar Saat Ini</Label>
-                                <img
-                                    src={todo.cover_url}
-                                    alt="Cover"
-                                    className="mt-2 w-full h-40 object-cover rounded-md border"
-                                />
-                            </div>
-                        )}
+                        {/* 4. Hapus semua JSX yang terkait dengan gambar */}
 
-                        {/* Input file untuk ganti gambar */}
-                        <Field>
-                            <FieldLabel htmlFor="cover-edit">
-                                {todo?.cover_url ? "Ganti Gambar" : "Upload Gambar"} (Opsional)
-                            </FieldLabel>
-                            <Input
-                                id="cover-edit" // Beri id unik agar tidak bentrok
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                                disabled={data.remove_cover} // Matikan jika "remove" dicentang
-                            />
-                            {errors.cover && (
-                                <p className="text-sm text-red-600">
-                                    {errors.cover}
-                                </p>
-                            )}
-                        </Field>
-
-                        {/* Checkbox untuk hapus gambar (hanya tampil jika gambar ada) */}
-                        {todo?.cover_url && (
-                            <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    id="remove_cover"
-                                    checked={data.remove_cover}
-                                    onCheckedChange={handleRemoveChange}
-                                    disabled={!!data.cover} // Matikan jika file baru dipilih
-                                />
-                                <Label
-                                    htmlFor="remove_cover"
-                                    className="text-sm font-medium"
-                                >
-                                    Hapus gambar saat ini
-                                </Label>
-                            </div>
-                        )}
-                        
+                        {/* Checkbox 'is_finished' */}
                         <div className="flex items-center space-x-2">
                             <Checkbox
-                                id="is_finished-edit" // Beri id unik
+                                id="is_finished-edit"
                                 checked={data.is_finished}
                                 onCheckedChange={(checked) =>
                                     setData("is_finished", checked)
