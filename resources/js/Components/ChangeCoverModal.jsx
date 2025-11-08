@@ -35,6 +35,7 @@ export default function ChangeCoverModal({ todo, isOpen, onClose }) {
 
     const handleSubmit = (event) => {
         event.preventDefault();
+        // Menggunakan POST dengan multipart/form-data
         post(`/todos/${todo.id}/cover`, {
             onSuccess: () => onClose(),
             preserveScroll: true,
@@ -64,17 +65,28 @@ export default function ChangeCoverModal({ todo, isOpen, onClose }) {
                 </DialogHeader>
                 <form onSubmit={handleSubmit}>
                     <FieldGroup className="grid gap-4 py-4">
-                        {/* Gambar saat ini */}
-                        {todo?.cover_url && (
-                            <div className="mb-2">
-                                <Label>Gambar Saat Ini</Label>
-                                <img
-                                    src={todo.cover_url}
-                                    alt="Cover"
-                                    className="mt-2 w-full h-40 object-cover rounded-md border"
-                                />
+                        {/* Gambar saat ini atau Placeholder "No Cover" */}
+                        <div className="mb-2">
+                            <Label>Gambar Saat Ini</Label>
+                            {/* Kontainer Pratinjau: Tinggi H-40 */}
+                            <div className="mt-2 w-full h-40 rounded-md overflow-hidden">
+                                {todo?.cover_url ? (
+                                    // JIKA ADA COVER: Tampilkan Gambar
+                                    <img
+                                        src={todo.cover_url}
+                                        alt="Cover"
+                                        className="w-full h-full object-cover" 
+                                    />
+                                ) : (
+                                    // JIKA TIDAK ADA COVER: Tampilkan Placeholder "No Cover"
+                                    <div className="w-full h-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md flex items-center justify-center">
+                                        <span className="text-lg font-semibold text-gray-500 dark:text-gray-400">
+                                            No Cover
+                                        </span>
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        </div>
 
                         <Field>
                             <FieldLabel htmlFor="cover-change">

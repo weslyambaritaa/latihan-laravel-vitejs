@@ -27,7 +27,7 @@ export default function Show() {
         setIsDeleting(true);
         router.delete(`/todos/${deletingTodo.id}`, {
             onSuccess: () => {
-                router.visit('/'); // Redirect ke home
+                router.visit('/');
             },
             onError: () => setIsDeleting(false),
         });
@@ -47,18 +47,25 @@ export default function Show() {
                         </Link>
                     </div>
 
-                    {/* Gambar Cover */}
-                    {todo.cover_url ? (
-                        <img
-                            src={todo.cover_url} // Ini bagian yang penting
-                            alt={todo.title}
-                            className="w-full h-80 object-cover rounded-lg shadow-lg mb-6"
-                        />
-                    ) : (
-                        <div className="w-full h-80 bg-gray-200 rounded-lg flex items-center justify-center text-muted-foreground mb-6">
-                            Tidak ada gambar sampul
-                        </div>
-                    )}
+                    {/* Gambar Cover atau Placeholder */}
+                    {/* Kontainer Utama: Tinggi H-80 */}
+                    <div className="w-full h-80 rounded-lg shadow-lg mb-6 overflow-hidden">
+                        {todo.cover_url ? (
+                            // JIKA ADA COVER: Tampilkan Gambar
+                            <img
+                                src={todo.cover_url}
+                                alt={todo.title}
+                                className="w-full h-full object-cover" 
+                            />
+                        ) : (
+                            // JIKA TIDAK ADA COVER: Tampilkan Placeholder "No Cover"
+                            <div className="w-full h-full bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center">
+                                <span className="text-2xl font-semibold text-gray-500 dark:text-gray-400">
+                                    No Cover
+                                </span>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Tombol Aksi Utama */}
                     <div className="flex justify-between items-center mb-6">

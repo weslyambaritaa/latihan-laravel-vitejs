@@ -211,13 +211,24 @@ export default function HomePage() {
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                             {todos.map((todo) => (
                                 <Card key={todo.id} className="shadow-sm flex flex-col overflow-hidden">
-                                    {todo.cover_url && (
-                                        <img
-                                            src={todo.cover_url}
-                                            alt={todo.title}
-                                            className="w-full h-40 object-cover"
-                                        />
-                                    )}
+                                    {/* BLOK INI TELAH DIUBAH */}
+                                    <div className="w-full h-40 overflow-hidden">
+                                        {todo.cover_url ? (
+                                            <img
+                                                src={todo.cover_url}
+                                                alt={todo.title}
+                                                className="w-full h-full object-cover" // Menggunakan h-full agar mengisi container h-40
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-gray-100 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                                                <span className="text-lg font-semibold text-gray-500 dark:text-gray-400">
+                                                    No Cover
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* AKHIR BLOK PERUBAHAN */}
+                                    
                                     <CardContent className="pt-6 flex-1 flex flex-col justify-between">
                                         <div>
                                             <div className="mb-2">
