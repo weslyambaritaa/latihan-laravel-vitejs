@@ -41,8 +41,8 @@ class AuthController extends Controller
             ])->onlyInput('email');
         }
 
-        // Jika berhasil, redirect ke halaman home
-        return redirect()->route('home');
+        // PERUBAHAN: Tambahkan flash message sukses untuk login
+        return redirect()->route('home')->with('success', 'Selamat datang kembali!');
     }
 
     // Register
@@ -73,7 +73,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // Redirect ke halaman login dengan pesan sukses
+        // Redirect ke halaman login dengan pesan sukses (sudah ada)
         return redirect()->route('auth.login')->with('success', 'Pendaftaran berhasil dilakukan! Silakan login.');
     }
 
@@ -85,6 +85,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('auth.login');
+        // PERUBAHAN: Tambahkan flash message sukses untuk logout
+        return redirect()->route('auth.login')->with('success', 'Anda telah berhasil logout.');
     }
 }

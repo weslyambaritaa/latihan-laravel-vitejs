@@ -12,7 +12,6 @@ class TodoController extends Controller
 {
     /**
      * Store a newly created resource in storage.
-     * (Method 'store' tidak berubah)
      */
     public function store(Request $request)
     {
@@ -36,7 +35,8 @@ class TodoController extends Controller
             'cover' => $coverPath,
         ]);
 
-        return Redirect::route('home');
+        // PERUBAHAN: Tambahkan flash message sukses
+        return Redirect::route('home')->with('success', 'Todo baru berhasil dibuat!');
     }
 
     /**
@@ -77,8 +77,8 @@ class TodoController extends Controller
         // Update data
         $todo->update($validated);
 
-        // Redirect kembali ke halaman sebelumnya (bisa home atau detail)
-        return Redirect::back();
+        // PERUBAHAN: Tambahkan flash message sukses
+        return Redirect::back()->with('success', 'Todo berhasil diperbarui!');
     }
 
     /**
@@ -99,6 +99,7 @@ class TodoController extends Controller
         ]);
 
         $coverPath = $todo->cover; // Biarkan ini
+        $message = 'Cover berhasil diperbarui!'; // Pesan default
 
         if ($request->hasFile('cover')) {
             if ($todo->cover) {
@@ -114,13 +115,14 @@ class TodoController extends Controller
                 Storage::disk('public')->delete($todo->cover);
             }
             $coverPath = null;
+            $message = 'Cover berhasil dihapus!'; // Pesan untuk kasus hapus
         }
 
         // Update database
         $todo->update(['cover' => $coverPath]);
 
-        // Redirect kembali ke halaman detail
-        return Redirect::route('todos.show', $todo->id);
+        // PERUBAHAN: Tambahkan flash message sukses
+        return Redirect::route('todos.show', $todo->id)->with('success', $message);
     }
 
 
@@ -143,7 +145,7 @@ class TodoController extends Controller
         // Hapus data dari database
         $todo->delete();
 
-        // Redirect kembali ke home
-        return Redirect::route('home');
+        // PERUBAHAN: Tambahkan flash message sukses
+        return Redirect::route('home')->with('success', 'Todo berhasil dihapus!');
     }
 }

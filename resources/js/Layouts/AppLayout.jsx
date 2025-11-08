@@ -1,8 +1,41 @@
-import React from "react";
-import { Link, router } from "@inertiajs/react";
+import React, { useEffect } from "react"; // PERUBAHAN: Tambahkan useEffect
+import { Link, router, usePage } from "@inertiajs/react"; // PERUBAHAN: Tambahkan usePage
 import { Button } from "@/components/ui/button";
+import Swal from "sweetalert2"; // PERUBAHAN: Import SweetAlert2
 
 export default function AppLayout({ children }) {
+    // PERUBAHAN: Ambil flash message dari props Inertia
+    const { flash } = usePage().props;
+
+    // PERUBAHAN: Gunakan useEffect untuk mendengarkan perubahan flash message
+    useEffect(() => {
+        if (flash.success) {
+            Swal.fire({
+                title: "Berhasil!",
+                text: flash.success,
+                icon: "success",
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+                toast: true,
+            });
+        }
+
+        if (flash.error) {
+            // Perlu diperhatikan: Saat ini tidak ada controller yang secara eksplisit mengirim flash.error
+            // Kecuali jika Anda menambahkan penanganan kesalahan khusus. Namun, ini adalah tempat logikanya.
+            Swal.fire({
+                title: "Gagal!",
+                text: flash.error,
+                icon: "error",
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+                toast: true,
+            });
+        }
+    }, [flash]); // Dependency array: jalankan ulang ketika flash object berubah
+
     const onLogout = () => {
         router.get("/auth/logout");
     };
