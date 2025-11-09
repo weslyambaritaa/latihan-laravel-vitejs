@@ -11,8 +11,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import EditTodoModal from "@/Components/EditTodoModal"; 
-import ChangeCoverModal from "@/Components/ChangeCoverModal"; 
+import EditTodoModal from "@/Components/EditTodoModal";
+import ChangeCoverModal from "@/Components/ChangeCoverModal";
 
 export default function Show() {
     const { todo } = usePage().props;
@@ -55,7 +55,7 @@ export default function Show() {
                             <img
                                 src={todo.cover_url}
                                 alt={todo.title}
-                                className="w-full h-full object-cover" 
+                                className="w-full h-full object-cover"
                             />
                         ) : (
                             // JIKA TIDAK ADA COVER: Tampilkan Placeholder "No Cover"
@@ -71,19 +71,19 @@ export default function Show() {
                     <div className="flex justify-between items-center mb-6">
                         <h1 className="text-4xl font-bold">{todo.title}</h1>
                         <div className="flex gap-2">
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 onClick={() => setIsCoverModalOpen(true)}
                             >
                                 Ganti Cover
                             </Button>
-                            <Button 
+                            <Button
                                 variant="outline"
                                 onClick={() => setEditingTodo(todo)}
                             >
                                 Edit
                             </Button>
-                            <Button 
+                            <Button
                                 variant="destructive"
                                 onClick={() => setDeletingTodo(todo)}
                             >
@@ -107,14 +107,21 @@ export default function Show() {
                                     </span>
                                 )}
                             </div>
-                            {todo.description && (
-                                <div>
-                                    <h3 className="text-sm font-medium text-muted-foreground">Deskripsi</h3>
+                            
+                            {/* PERUBAHAN DI SINI: Blok deskripsi selalu tampil */}
+                            <div>
+                                <h3 className="text-sm font-medium text-muted-foreground">Deskripsi</h3>
+                                {todo.description ? (
                                     <p className="text-lg whitespace-pre-wrap">
                                         {todo.description}
                                     </p>
-                                </div>
-                            )}
+                                ) : (
+                                    <p className="text-lg text-gray-500 italic">
+                                        Tidak ada deskripsi
+                                    </p>
+                                )}
+                            </div>
+                            
                         </CardContent>
                     </Card>
                 </div>
@@ -125,8 +132,8 @@ export default function Show() {
                 todo={editingTodo}
                 onClose={() => setEditingTodo(null)}
             />
-            
-            <ChangeCoverModal 
+
+            <ChangeCoverModal
                 todo={todo}
                 isOpen={isCoverModalOpen}
                 onClose={() => setIsCoverModalOpen(false)}
@@ -141,16 +148,16 @@ export default function Show() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button 
-                            variant="outline" 
-                            onClick={() => setDeletingTodo(null)} 
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeletingTodo(null)}
                             disabled={isDeleting}
                         >
                             Batal
                         </Button>
-                        <Button 
-                            variant="destructive" 
-                            onClick={handleDelete} 
+                        <Button
+                            variant="destructive"
+                            onClick={handleDelete}
                             disabled={isDeleting}
                         >
                             {isDeleting ? "Menghapus..." : "Hapus"}
