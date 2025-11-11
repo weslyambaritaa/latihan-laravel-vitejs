@@ -5,14 +5,18 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\TodoController; // 1. Pastikan TodoController di-import
 use Illuminate\Support\Facades\Route;
 
+// routes/web.php (KODE PERBAIKAN)
+
 Route::middleware(['handle.inertia'])->group(function () {
     // Auth Routes
     Route::group(['prefix' => 'auth'], function () {
         Route::get('/login', [AuthController::class, 'login'])->name('auth.login');
-        Route::post('/login', [AuthController::class, 'postLogin'])->name('auth.login');
+        // Beri nama unik, contoh: 'auth.login.store'
+        Route::post('/login', [AuthController::class, 'postLogin'])->name('auth.login.store'); 
 
         Route::get('/register', [AuthController::class, 'register'])->name('auth.register');
-        Route::post('/register', [AuthController::class, 'postRegister'])->name('auth.register');
+        // Beri nama unik, contoh: 'auth.register.store'
+        Route::post('/register', [AuthController::class, 'postRegister'])->name('auth.register.store');
 
         Route::get('/logout', [AuthController::class, 'logout'])->name('auth.logout');
     });
@@ -23,10 +27,10 @@ Route::middleware(['handle.inertia'])->group(function () {
         // Rute untuk Create (POST)
         Route::post('/todos', [TodoController::class, 'store'])->name('todos.store');
         
-        // 2. TAMBAHKAN BARIS INI (Rute Detail/Show)
+        // Rute Detail/Show
         Route::get('/todos/{todo}', [TodoController::class, 'show'])->name('todos.show');
 
-        // Rute untuk Update (POST - kita pakai POST untuk form multipart)
+        // Rute untuk Update (POST)
         Route::post('/todos/{todo}', [TodoController::class, 'update'])->name('todos.update');
         
         // Rute untuk Delete (DELETE)
@@ -36,3 +40,4 @@ Route::middleware(['handle.inertia'])->group(function () {
         Route::post('/todos/{todo}/cover', [TodoController::class, 'updateCover'])->name('todos.updateCover');
     });
 });
+// <-- Pastikan tidak ada '}' tambahan di sini
